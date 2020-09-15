@@ -1,0 +1,34 @@
+Command line:
+   divider_tb_isim_beh.exe
+     -simmode  gui
+     -simrunnum  0
+     -socket  57290
+
+Tue Sep 15 22:30:27 2020
+
+
+ Elaboration Time: 1.20313 sec
+
+ Current Memory Usage: 1626.06 Meg
+
+ Total Signals          : 24
+ Total Nets             : 46
+ Total Signal Drivers   : 15
+ Total Blocks           : 5
+ Total Primitive Blocks : 4
+ Total Processes        : 11
+ Total Traceable Variables  : 14
+ Total Scalar Nets and Variables : 530
+
+** Failure:finish
+User(VHDL) Code Called Simulation Stop
+In process divider_tb.vhd:stim_proc 
+ 
+
+
+ Total Simulation Time: 1.23438 sec
+
+ Current Memory Usage: 1626.17 Meg
+
+Tue Sep 15 22:30:30 2020
+

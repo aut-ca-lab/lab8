@@ -1,0 +1,1 @@
+-intstyle "ise" -incremental -lib "secureip" -o "E:/Computer Architecture/L8/divider_tb_isim_beh.exe" -prj "E:/Computer Architecture/L8/divider_tb_beh.prj" "work.divider_tb" 
