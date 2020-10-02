@@ -52,26 +52,58 @@ ARCHITECTURE Behavioral OF divider IS
     -- Inputs/outputs of the state register and the z, d, and i registers
 
     SIGNAL state, next_state : state_type;
-    SIGNAL z_reg : unsigned(8 DOWNTO 0);
-    SIGNAL d_reg : unsigned(3 DOWNTO 0);
+    SIGNAL quo_rem_reg : unsigned(8 DOWNTO 0);
+    SIGNAL divisor_reg : unsigned(3 DOWNTO 0);
     SIGNAL count : INTEGER := 1;
 
     -- The subtraction output 
     SIGNAL sub : unsigned(4 DOWNTO 0);
 BEGIN
 
-    --control path: registers of the FSM
+    -- counting cycles
     PROCESS (clk, reset)
     BEGIN
         IF (reset = '0') THEN
-            state <= idle;
+            count <= 0;
         ELSIF (clk'event AND clk = '1') THEN
-            state <= next_state;
+            CASE state IS
+                WHEN idle =>
+                    count <= 0;
+
+                WHEN chk =>
+                    count <= count + 1;
+
+                WHEN OTHERS => NULL;
+
+            END CASE;
         END IF;
     END PROCESS;
 
-    --control path: the logic that determines the next state of the FSM (this part of
-    --the code is written based on the green hexagons of Figure 3)
+    -- divide operation
+    PROCESS (clk, reset)
+    BEGIN
+        IF (reset = '0') THEN
+            quo_rem_reg <= (OTHERS => '0');
+            divisor_reg <= (OTHERS => '0');
+        ELSIF (clk'event AND clk = '1') THEN
+            divisor_reg <= unsigned(divisor);
+            CASE state IS
+                WHEN idle =>
+                    quo_rem_reg <= unsigned('0' & dividend);
+
+                WHEN shift =>
+                    quo_rem_reg(8 DOWNTO 1) <= quo_rem_reg(7 DOWNTO 0);
+                    quo_rem_reg(0) <= '0';
+
+                WHEN chk =>
+                    IF (quo_rem_reg(8 DOWNTO 4) >= ('0' & divisor_reg)) THEN
+                        quo_rem_reg <= sub(4 DOWNTO 0) & quo_rem_reg(3 DOWNTO 1) & '1';
+                    END IF;
+            END CASE;
+        END IF;
+    END PROCESS;
+
+    -- next state
     PROCESS (state, start, dividend, divisor, count)
     BEGIN
         CASE state IS
@@ -99,61 +131,26 @@ BEGIN
         END CASE;
     END PROCESS;
 
-    --control path: output logic
+    -- moore machine
+    PROCESS (clk, reset)
+    BEGIN
+        IF (reset = '0') THEN
+            state <= idle;
+        ELSIF (clk'event AND clk = '1') THEN
+            state <= next_state;
+        END IF;
+    END PROCESS;
+
+    
+
+    sub <= (quo_rem_reg(8 DOWNTO 4) - unsigned('0' & divisor));
+
+    -- outputs
+    quotient <= std_logic_vector(quo_rem_reg(3 DOWNTO 0));
+    remainder <= std_logic_vector(quo_rem_reg(7 DOWNTO 4));
     ready <= '1' WHEN state = idle ELSE
         '0';
     overflow <= '1' WHEN (state = idle AND (dividend(7 DOWNTO 4) >= divisor)) ELSE
         '0';
-
-    --control path: registers of the counter used to count the iterations
-    PROCESS (clk, reset)
-    BEGIN
-        IF (reset = '0') THEN
-            count <= 0;
-        ELSIF (clk'event AND clk = '1') THEN
-            CASE state IS
-                WHEN idle =>
-                    count <= 0;
-
-                WHEN chk =>
-                    count <= count + 1;
-
-                WHEN OTHERS =>
-
-            END CASE;
-        END IF;
-    END PROCESS;
-
-    --data path: the registers used in the data path
-    PROCESS (clk, reset)
-    BEGIN
-        IF (reset = '0') THEN
-            z_reg <= (OTHERS => '0');
-            d_reg <= (OTHERS => '0');
-        ELSIF (clk'event AND clk = '1') THEN
-            d_reg <= unsigned(divisor);
-            CASE state IS
-                WHEN idle =>
-                    z_reg <= unsigned('0' & dividend);
-
-                WHEN shift =>
-                    z_reg(8 DOWNTO 1) <= z_reg(7 DOWNTO 0);
-                    z_reg(0) <= '0';
-
-                WHEN chk =>
-                    IF (z_reg(8 DOWNTO 4) >= ('0' & d_reg)) THEN
-                        z_reg <= sub(4 DOWNTO 0) & z_reg(3 DOWNTO 1) & '1';
-                    END IF;
-            END CASE;
-        END IF;
-    END PROCESS;
-
-
-    --data path: functional units
-    sub <= (z_reg(8 DOWNTO 4) - unsigned('0' & divisor));
-
-    --data path: output
-    quotient <= std_logic_vector(z_reg(3 DOWNTO 0));
-    remainder <= std_logic_vector(z_reg(7 DOWNTO 4));
 
 END Behavioral;
